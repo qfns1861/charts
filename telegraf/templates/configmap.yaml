@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "telegraf.fullname" . }}
+  labels:
+    {{- include "telegraf.labels" . | nindent 4 }}
+data:
+  agent.conf: |
+{{ tpl (.Files.Get "confTemplate/agent.conf.tpl") . | indent 4 }}
+  inputs.cpu.conf: |
+{{ tpl (.Files.Get "confTemplate/inputs.cpu.conf.tpl") . | indent 4 }}
+{{- if .Values.app.net_response.enabled }}
+  inputs.net_response.conf: |
+{{ tpl (.Files.Get "confTemplate/inputs.net_response.conf.tpl") . | indent 4 }}
+{{- end }}

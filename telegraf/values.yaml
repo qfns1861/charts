@@ -1,0 +1,97 @@
+global:
+  namespace:
+    name: cicd-hf01
+  pool:
+    name: hf01
+    type: dmz
+  service:
+    name: telegraf
+  location:
+    name: HF
+  ingress:
+    name: hf01
+  cluster:
+    name: hf01
+
+replicaCount: 5
+
+image:
+  repo: telegraf
+  tag: 1.32.1-alpine-cicd
+  meta:
+    pullPolicy: IfNotPresent
+
+podAnnotations: {}
+
+podLabels: {}
+
+imagePullSecrets: []
+
+prometheus_client:
+  listen: 9273
+
+cpu:
+  percpu: true
+  totalcpu: true
+  collect_cpu_time: true
+  report_active: true
+  core_tags: true
+
+args: []
+
+env:
+  - name: HOSTNAME
+    value: "telegraf-polling-service"
+
+resources: {}
+
+nodeSelector: {}
+
+affinity: {}
+
+tolerations: []
+
+updateStrategy: {}
+
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+
+rbac:
+  create: false
+  clusterWide: false
+  rules: []
+
+serviceAccount:
+  create: false
+  name:
+  annotations: {}
+
+pdb:
+  create: true
+  minAvailable: 1
+
+app:
+  cpu:
+    percpu: true
+    totalcpu: true
+    collect_cpu_time: true
+    report_active: true
+    core_tags: true
+  agent:
+    prometheus_client:
+      listen: 9273
+  net_response:
+    enabled: true
+    services:
+      - address: www.hao123.com:80
+        tags: redis
+      - address: cn.bing.com:80
+        tags: prometheus
+      - address: www.jd.com:80
+        tags: kafka
+      - address: www.taobao.com:80
+        tags: elasticsearch
+      - address: www.baidu.com:80
+        tags: prosgresql
