@@ -3,9 +3,9 @@ kind: Rollout
 metadata:
   name: {{ include "telegraf.fullname" . }}
   labels:
-    {{- include "telegraf.labels" . | nindent 4 }}
+{{- include "telegraf.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.k8s.replicaCount }}
   strategy:
     canary:
       steps:
@@ -22,106 +22,102 @@ spec:
       app: rollouts-telegraf
       app.kubernetes.io/name: {{ include "telegraf.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-  {{- with .Values.updateStrategy }}
-  strategy:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
   template:
     metadata:
       labels:
         app: rollouts-telegraf
         app.kubernetes.io/name: {{ include "telegraf.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
-{{- with .Values.podLabels }}
+{{- with .Values.k8s.podLabels }}
 {{ toYaml . | indent 8 }}
 {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        {{- if .Values.podAnnotations }}
-{{ toYaml .Values.podAnnotations | indent 8 }}
+        {{- if .Values.k8s.podAnnotations }}
+{{ toYaml .Values.k8s.podAnnotations | indent 8 }}
         {{- end }}
     spec:
-{{- if .Values.securityContext }}
+{{- if .Values.k8s.securityContext }}
       securityContext:
-{{ toYaml .Values.securityContext | indent 8 }}
+{{ toYaml .Values.k8s.securityContext | indent 8 }}
 {{- end }}
       serviceAccountName: {{ template "telegraf.serviceAccountName" . }}
       containers:
       - name: {{ .Chart.Name }}
-{{- if .Values.containerSecurityContext }}
+{{- if .Values.k8s.containerSecurityContext }}
         securityContext:
-{{ toYaml .Values.containerSecurityContext | indent 10 }}
+{{ toYaml .Values.k8s.containerSecurityContext | indent 10 }}
 {{- end }}
-        image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ default "" .Values.image.meta.pullPolicy | quote }}
-{{- if .Values.containerPorts }}
+        image: "{{ .Values.k8s.image.repo }}:{{ .Values.k8s.image.tag }}"
+        imagePullPolicy: {{ default "" .Values.k8s.image.meta.pullPolicy | quote }}
+{{- if .Values.k8s.containerPorts }}
         ports:
-{{ toYaml .Values.containerPorts | indent 10 }}
+{{ toYaml .Values.k8s.containerPorts | indent 10 }}
 {{- end }}
         resources:
-{{ toYaml .Values.resources | indent 10 }}
-        {{- if .Values.args }}
+{{ toYaml .Values.k8s.resources | indent 10 }}
+        {{- if .Values.k8s.args }}
         args:
-{{ toYaml .Values.args | indent 8 }}
+{{ toYaml .Values.k8s.args | indent 10 }}
         {{- end }}
         env:
-{{ toYaml .Values.env | indent 8 }}
-{{- if .Values.envFromSecret }}
+{{ toYaml .Values.k8s.env | indent 8 }}
+{{- if .Values.k8s.envFromSecret }}
         envFrom:
           - secretRef:
-              name: {{ .Values.envFromSecret }}
+              name: {{ .Values.k8s.envFromSecret }}
 {{- end }}
         volumeMounts:
         - name: config
           mountPath: /etc/telegraf/telegraf.d/
-        {{- range .Values.volumeMounts }}
+        {{- range .Values.k8s.volumeMounts }}
         - name: {{ .name }}
           mountPath: {{ .mountPath }}
         {{- end }}
-        {{- if .Values.mountPoints }}
-{{ toYaml .Values.mountPoints | indent 8 }}
+        {{- if .Values.k8s.mountPoints }}
+{{ toYaml .Values.k8s.mountPoints | indent 8 }}
         {{- end }}
-        {{- if .Values.hooks }}
-        {{- if or (.Values.hooks.postStart) (.Values.hooks.preStop) }}
+        {{- if .Values.k8s.hooks }}
+        {{- if or (.Values.k8s.hooks.postStart) (.Values.k8s.hooks.preStop) }}
         lifecycle:
-        {{- if .Values.hooks.postStart }}
+        {{- if .Values.k8s.hooks.postStart }}
           postStart:
             exec:
               command:
-        {{- range .Values.hooks.postStart }}
+        {{- range .Values.k8s.hooks.postStart }}
                 - {{ . | quote }}
         {{- end }}
         {{ end }}
-        {{- if .Values.hooks.preStop }}
+        {{- if .Values.k8s.hooks.preStop }}
           preStop:
             exec:
               command:
-        {{- range .Values.hooks.preStop }}
+        {{- range .Values.k8s.hooks.preStop }}
                 - {{ . | quote }}
         {{- end }}
         {{ end }}
         {{ end }}
         {{ end }}
-      {{- if .Values.imagePullSecrets }}
+      {{- with .Values.k8s.imagePullSecrets }}
       imagePullSecrets:
-{{ toYaml .Values.imagePullSecrets | indent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.k8s.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
-      {{- if .Values.affinity }}
+      {{- with .Values.k8s.affinity }}
       affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
-      {{- if .Values.tolerations }}
+      {{- with .Values.k8s.tolerations }}
       tolerations:
-{{ toYaml .Values.tolerations | indent 8 }}
+{{ toYaml . | indent 8 }}
       {{- end }}
       volumes:
-      - name: config
-        configMap:
-          name: {{ include "telegraf.fullname" . }}
-      {{- if .Values.volumes }}
-{{ toYaml .Values.volumes | indent 6 }}
+        - name: config
+          configMap:
+            name: {{ include "telegraf.fullname" . }}
+      {{- if .Values.k8s.volumes }}
+{{ toYaml .Values.k8s.volumes | indent 8 }}
       {{- end }}

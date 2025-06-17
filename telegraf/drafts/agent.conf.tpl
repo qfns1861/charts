@@ -1,3 +1,3 @@
 [agent]
 [[outputs.prometheus_client]]
-listen = ":{{ .Values.app.agent.prometheus_client.listen }}"
+listen = ":{{ .Values.cfg.agent.prometheus_client.listen }}"

@@ -1,9 +1,9 @@
-{{- range .Values.app.net_response.services }}
+{{- range $name, $cfg := .Values.cfg.net_response.services }}
 [[inputs.net_response]]
-  protocol = {{ .tcp | default "tcp" | quote }}
-  address = {{ .address | quote }}
-  timeout = {{ .timeout | default "5s" | quote }}
-  read_timeout = {{ .read_timeout | default "5s" |quote }}
+  protocol = {{ default "tcp" (index $cfg "tcp") | quote }}
+  address = {{ default (print $name ":80") (index $cfg "address") | quote }}
+  timeout = {{ default "5s" (index $cfg "timeout") | quote }}
+  read_timeout = {{ default "5s" (index $cfg "read_timeout") | quote }}
   [inputs.net_response.tags]
-    tags = {{ .tags | quote }}
+    name = {{ $name | quote }}
 {{- end }}

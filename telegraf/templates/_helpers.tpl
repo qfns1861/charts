@@ -28,8 +28,8 @@ If release name contains chart name it will be used as a full name.
 Set ingress name to the same as cluster if missing
 */}}
 {{- define "telegraf.ingress" -}}
-{{- if .Values.global.ingress.name -}}
-{{- .Values.global.ingress.name | trunc 63 | trimSuffix "-" -}}
+{{- if .Values.argo.ingress.name -}}
+{{- .Values.argo.ingress.name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- template "telegraf.cluster" . -}}
 {{- end -}}
@@ -48,7 +48,7 @@ Common labels
 {{- define "telegraf.labels" -}}
 helm.sh/chart: {{ include "telegraf.chart" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-service: {{ .Values.global.service.name }}
+service: {{ .Values.argo.service.name }}
 {{ include "telegraf.selectorLabels" . }}
 {{- end -}}
 
@@ -711,10 +711,10 @@ Renders primitive and arrays of primitive types first, then nested tables and ar
 Create the name of the service account to use
 */}}
 {{- define "telegraf.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create -}}
-    {{ default (include "telegraf.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.k8s.serviceAccount.create -}}
+    {{ default (include "telegraf.fullname" .) .Values.k8s.serviceAccount.name }}
 {{- else -}}
-    {{ default "default" .Values.serviceAccount.name }}
+    {{ default "default" .Values.k8s.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
 
@@ -722,11 +722,11 @@ Create the name of the service account to use
 Get health configuration
 */}}
 {{- define "telegraf.health" -}}
-{{- if .Values.metrics.health.enabled -}}
-    {{- .Values.metrics.health | toYaml -}}
+{{- if .Values.k8s.metrics.health.enabled -}}
+    {{- .Values.k8s.metrics.health | toYaml -}}
 {{- else -}}
     {{- $health := dict -}}
-    {{- range $objectKey, $objectValue := .Values.config.outputs }}
+    {{- range $objectKey, $objectValue := .Values.k8s.config.outputs }}
         {{- range $key, $value := . -}}
         {{- if eq $key "health" -}}
             {{- $health = $value -}}

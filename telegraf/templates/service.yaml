@@ -1,20 +1,20 @@
-{{- if .Values.service.enabled -}}
+{{- if .Values.k8s.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "telegraf.fullname" . }}
   labels:
-    {{- include "telegraf.labels" . | nindent 4 }}
-  {{- if .Values.service.annotations }}
+{{- include "telegraf.labels" . | nindent 4 }}
+  {{- if .Values.k8s.service.annotations }}
   annotations:
-{{ toYaml .Values.service.annotations | indent 4 }}
+{{ toYaml .Values.k8s.service.annotations | indent 4 }}
   {{- end }}
 spec:
   type: NodePort
   ports:
-  - port: {{ .Values.prometheus_client.listen }}
-    targetPort: {{ .Values.prometheus_client.listen }}
+  - port: {{ .Values.k8s.prometheus_client.listen }}
+    targetPort: {{ .Values.k8s.prometheus_client.listen }}
     name: http
   selector:
-    {{- include "telegraf.selectorLabels" . | nindent 4 }}
-{{- end -}}
+{{- include "telegraf.selectorLabels" . | nindent 4 }}
+{{- end }}
