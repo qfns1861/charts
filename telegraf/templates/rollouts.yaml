@@ -1,4 +1,4 @@
-apiVersion: argoproj.io/v1alpha1
+apiVersion: rollouts.argoproj.io
 kind: Rollout
 metadata:
   name: {{ include "telegraf.fullname" . }}
