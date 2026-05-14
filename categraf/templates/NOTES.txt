@@ -1,0 +1,24 @@
+Categraf has been installed successfully.
+
+To open a shell session in the container running Categraf run the following:
+
+  kubectl exec -i -t --namespace {{ .Release.Namespace }} $(kubectl get pods --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "categraf.fullname" . }} -o jsonpath='{.items[0].metadata.name}') /bin/sh
+
+To view the logs for a Categraf pod, run the following:
+
+  kubectl logs -f --namespace {{ .Release.Namespace }} $(kubectl get pods --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "categraf.fullname" . }} -o jsonpath='{ .items[0].metadata.name }')
+
+Configuration:
+  - Config files are mounted at: /opt/categraf/conf
+  - Scrape config is mounted at: /opt/categraf/scrape
+  - WAL storage path: /opt/categraf/prometheus-wal
+
+{{- if .Values.k8s.service.enabled }}
+
+Service:
+  - Service name: {{ include "categraf.fullname" . }}
+  - Service port: {{ .Values.cfg.http.port }}
+  - Metrics endpoint: http://{{ include "categraf.fullname" . }}:{{ .Values.cfg.http.port }}/metrics
+{{- end }}
+
+Writer endpoint: {{ .Values.cfg.writer.url }}

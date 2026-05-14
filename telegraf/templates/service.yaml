@@ -10,7 +10,7 @@ metadata:
 {{ toYaml .Values.k8s.service.annotations | indent 4 }}
   {{- end }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - port: {{ .Values.k8s.prometheus_client.listen }}
     targetPort: {{ .Values.k8s.prometheus_client.listen }}

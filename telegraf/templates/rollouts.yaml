@@ -22,12 +22,14 @@ spec:
       app: rollouts-telegraf
       app.kubernetes.io/name: {{ include "telegraf.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
+      {{ include "cilium.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
         app: rollouts-telegraf
         app.kubernetes.io/name: {{ include "telegraf.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+        {{ include "cilium.selectorLabels" . | nindent 8 }}
 {{- with .Values.k8s.podLabels }}
 {{ toYaml . | indent 8 }}
 {{- end }}

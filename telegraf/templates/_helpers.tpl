@@ -3,7 +3,7 @@
 Expand the name of the chart.
 */}}
 {{- define "telegraf.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Values.fullnameOverride -}}
 {{- end -}}
 
 {{/*
@@ -28,8 +28,8 @@ If release name contains chart name it will be used as a full name.
 Set ingress name to the same as cluster if missing
 */}}
 {{- define "telegraf.ingress" -}}
-{{- if .Values.argo.ingress.name -}}
-{{- .Values.argo.ingress.name | trunc 63 | trimSuffix "-" -}}
+{{- if .Values.k8s.ingress -}}
+{{- .Values.k8s.ingress | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- template "telegraf.cluster" . -}}
 {{- end -}}
@@ -48,7 +48,7 @@ Common labels
 {{- define "telegraf.labels" -}}
 helm.sh/chart: {{ include "telegraf.chart" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-service: {{ .Values.argo.service.name }}
+service: {{ .Values.k8s.service.type }}
 {{ include "telegraf.selectorLabels" . }}
 {{- end -}}
 
@@ -58,8 +58,15 @@ Selector labels
 {{- define "telegraf.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "telegraf.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+cilium.io/policy: {{ include "telegraf.name" . }}
 {{- end -}}
 
+{{/*
+cilium Selector labels
+*/}}
+{{- define "cilium.selectorLabels" -}}
+cilium.io/policy: {{ include "telegraf.name" . }}
+{{- end -}}
 
 {{/*
   CUSTOM TEMPLATES: This section contains templates that make up the different parts of the telegraf configuration file.

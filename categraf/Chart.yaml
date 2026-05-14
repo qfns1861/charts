@@ -1,0 +1,6 @@
+apiVersion: v2
+name: categraf
+version: 1.0.0
+appVersion: 0.3.72
+deprecated: false
+description: Categraf is an open-source, resource-aware agent for collecting, processing, aggregating, and sending metrics from systems and services.

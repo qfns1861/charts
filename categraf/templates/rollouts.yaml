@@ -1,0 +1,108 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "categraf.fullname" . }}
+  labels:
+{{- include "categraf.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.k8s.replicaCount }}
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: {duration: 10}
+      - setWeight: 60
+      - pause: {duration: 10}
+      - setWeight: 80
+      - pause: {duration: 10}
+  selector:
+    matchLabels:
+      app: rollouts-categraf
+      app.kubernetes.io/name: {{ include "categraf.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: rollouts-categraf
+        app.kubernetes.io/name: {{ include "categraf.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+{{- with .Values.podLabels }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.k8s.podAnnotations }}
+{{ toYaml .Values.k8s.podAnnotations | indent 8 }}
+        {{- end }}
+    spec:
+{{- if .Values.securityContext }}
+      securityContext:
+{{ toYaml .Values.securityContext | indent 8 }}
+{{- end }}
+      containers:
+      - name: {{ .Chart.Name }}
+{{- if .Values.containerSecurityContext }}
+        securityContext:
+{{ toYaml .Values.containerSecurityContext | indent 10 }}
+{{- end }}
+        image: "{{ .Values.k8s.image.repo }}:{{ .Values.k8s.image.tag }}"
+        imagePullPolicy: {{ default "IfNotPresent" .Values.k8s.image.meta.pullPolicy }}
+        command: ["/usr/bin/categraf"]
+        args: ["-configs", "/opt/categraf/conf"]
+{{- if .Values.cfg.http.enable }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.cfg.http.port }}
+          protocol: TCP
+{{- end }}
+        env:
+        - name: TZ
+          value: "Asia/Shanghai"
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: HOSTIP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: config
+          mountPath: /opt/categraf/conf/config.toml
+          subPath: config.toml
+      dnsPolicy: ClusterFirst
+      hostNetwork: false
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+{{- with .Values.k8s.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.k8s.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 420
+          name: {{ include "categraf.fullname" . }}
+      - name: prometheus-wal
+        emptyDir: {}

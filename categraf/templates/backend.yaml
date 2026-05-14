@@ -1,0 +1,9 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: Backend
+metadata:
+  name: {{ .Values.argo.app }}-backend
+spec:
+  endpoints:
+    - fqdn:
+        hostname: {{ .Values.argo.app }}.{{ .Values.argo.namespace }}.svc.cluster.local
+        port: {{ .Values.cfg.http.port }}

@@ -1,4 +1,4 @@
-# Telegraf Helm chart
+# Telegraf Helm chart 0714
 
 [Telegraf](https://github.com/influxdata/telegraf) is a plugin-driven server agent used for collecting and reporting metrics.
 

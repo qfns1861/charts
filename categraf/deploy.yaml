@@ -1,0 +1,261 @@
+---
+# Source: categraf/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: categraf
+  labels:
+    helm.sh/chart: categraf-1.0.0
+    app.kubernetes.io/managed-by: Helm
+    app: n9e
+    component: categraf
+    service: ClusterIP
+    app.kubernetes.io/name: categraf
+    app.kubernetes.io/instance: categraf
+    app: n9e
+    component: categraf
+    cilium.io/policy: categraf
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: rollouts-categraf
+      app.kubernetes.io/name: categraf
+      app.kubernetes.io/instance: categraf
+---
+# Source: categraf/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: categraf
+  labels:
+    helm.sh/chart: categraf-1.0.0
+    app.kubernetes.io/managed-by: Helm
+    app: n9e
+    component: categraf
+    service: ClusterIP
+    app.kubernetes.io/name: categraf
+    app.kubernetes.io/instance: categraf
+    app: n9e
+    component: categraf
+    cilium.io/policy: categraf
+data:
+  config.toml: |
+    [global]
+    # whether print configs
+    print_configs = true
+    
+    # add label(agent_hostname) to series
+    hostname = "$HOSTNAME"
+    
+    [http]
+    # 是否启用 http 服务，用于暴露 metrics
+    enable = true
+    # 监听地址
+    address = ":9100"
+    # 是否打印访问日志
+    print_access = false
+    # 是否开启 pprof
+    pprof = false
+    # 超时时间
+    timeout = 30
+    
+    # will not add label(agent_hostname) if true
+    omit_hostname = false
+    
+    # s | ms
+    precision = "ms"
+    
+    # global collect interval
+    interval = 15
+    
+    [writer_opt]
+    # default: 2000
+    batch = 2000
+    # channel(as queue) size
+    chan_size = 10000
+    
+    [[writers]]
+    url = "http://nserver-service:17000/prometheus/v1/write?ignore_ident=true"
+    
+    # Basic auth username
+    basic_auth_user = ""
+    
+    # Basic auth password
+    basic_auth_pass = ""
+    
+    # timeout settings, unit: ms
+    timeout = 5000
+    dial_timeout = 2500
+    max_idle_conns_per_host = 100
+---
+# Source: categraf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: categraf
+  labels:
+    helm.sh/chart: categraf-1.0.0
+    app.kubernetes.io/managed-by: Helm
+    app: n9e
+    component: categraf
+    service: ClusterIP
+    app.kubernetes.io/name: categraf
+    app.kubernetes.io/instance: categraf
+    app: n9e
+    component: categraf
+    cilium.io/policy: categraf
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9100
+    targetPort: 9100
+    protocol: TCP
+    name: http
+  selector:
+    app: rollouts-categraf
+    app.kubernetes.io/name: categraf
+    app.kubernetes.io/instance: categraf
+---
+# Source: categraf/templates/backend.yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: Backend
+metadata:
+  name: categraf-backend
+spec:
+  endpoints:
+    - fqdn:
+        hostname: categraf.hf01.svc.cluster.local
+        port: 9100
+---
+# Source: categraf/templates/cnp.yaml
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: categraf-ingress-opens
+spec:
+  endpointSelector:
+    matchLabels:
+      cilium.io/policy: categraf
+  ingress:
+  - fromEntities:
+    - all
+---
+# Source: categraf/templates/cnp.yaml
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: categraf-egress-opens
+spec:
+  endpointSelector:
+    matchLabels:
+      cilium.io/policy: categraf
+  egress:
+    - toEndpoints:
+        - matchLabels: {}
+    - toCIDR:
+        - "0.0.0.0/0"
+---
+# Source: categraf/templates/httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: categraf-route
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: envoy-gateway-system
+  hostnames:
+    - categraf.qfns.com
+  rules:
+    - backendRefs:
+        - group: gateway.envoyproxy.io
+          kind: Backend
+          name: categraf-backend
+---
+# Source: categraf/templates/rollouts.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: categraf
+  labels:
+    helm.sh/chart: categraf-1.0.0
+    app.kubernetes.io/managed-by: Helm
+    app: n9e
+    component: categraf
+    service: ClusterIP
+    app.kubernetes.io/name: categraf
+    app.kubernetes.io/instance: categraf
+    app: n9e
+    component: categraf
+    cilium.io/policy: categraf
+spec:
+  replicas: 3
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: {duration: 10}
+      - setWeight: 60
+      - pause: {duration: 10}
+      - setWeight: 80
+      - pause: {duration: 10}
+  selector:
+    matchLabels:
+      app: rollouts-categraf
+      app.kubernetes.io/name: categraf
+      app.kubernetes.io/instance: categraf
+  template:
+    metadata:
+      labels:
+        app: rollouts-categraf
+        app.kubernetes.io/name: categraf
+        app.kubernetes.io/instance: categraf
+      annotations:
+        checksum/config: 0adc96b547ab1fad21836f7b2498e0c9cfcca732f6bd667599915f36ae0ad902
+    spec:
+      containers:
+      - name: categraf
+        image: "flashcatcloud/categraf:v0.5.4"
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/bin/categraf"]
+        args: ["-configs", "/opt/categraf/conf"]
+        ports:
+        - name: http
+          containerPort: 9100
+          protocol: TCP
+        env:
+        - name: TZ
+          value: "Asia/Shanghai"
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: HOSTIP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        resources:
+          null
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: config
+          mountPath: /opt/categraf/conf/config.toml
+          subPath: config.toml
+      dnsPolicy: ClusterFirst
+      hostNetwork: false
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 420
+          name: categraf
+      - name: prometheus-wal
+        emptyDir: {}

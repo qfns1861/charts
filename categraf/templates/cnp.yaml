@@ -1,0 +1,27 @@
+{{- if .Values.k8s.cilium.enabled }}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ .Values.argo.app }}-ingress-opens
+spec:
+  endpointSelector:
+    matchLabels:
+      {{ include "cilium.selectorLabels" . }}
+  ingress:
+  - fromEntities:
+    - all
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ .Values.argo.app }}-egress-opens
+spec:
+  endpointSelector:
+    matchLabels:
+      {{ include "cilium.selectorLabels" . }}
+  egress:
+    - toEndpoints:
+        - matchLabels: {}
+    - toCIDR:
+        - "0.0.0.0/0"
+{{- end }}

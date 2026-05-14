@@ -1,0 +1,23 @@
+{{- if .Values.k8s.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "categraf.fullname" . }}
+  labels:
+{{- include "categraf.labels" . | nindent 4 }}
+  {{- if .Values.k8s.service.annotations }}
+  annotations:
+{{ toYaml .Values.k8s.service.annotations | indent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.k8s.service.type }}
+  ports:
+  - port: {{ .Values.cfg.http.port }}
+    targetPort: {{ .Values.cfg.http.port }}
+    protocol: TCP
+    name: http
+  selector:
+    app: rollouts-categraf
+    app.kubernetes.io/name: {{ include "categraf.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
